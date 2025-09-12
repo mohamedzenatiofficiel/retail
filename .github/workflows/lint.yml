@@ -4,7 +4,7 @@ name: Ruff Lint
 on:
   pull_request:   # à chaque pull request
   push:           # à chaque push
-    branches: [ "main" ]   # uniquement sur la branche main
+    branches: [ "main", "dev" ]   # uniquement sur la branche main & dev
 
 jobs:
   ruff:

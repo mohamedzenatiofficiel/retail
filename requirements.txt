@@ -1,0 +1,11 @@
+# --- Backend API (FastAPI mock) ---
+fastapi
+uvicorn
+pydantic[email]
+
+# --- Collectors (Python clients) ---
+requests
+python-dotenv
+
+# --- Tests & Qualité ---
+ruff

@@ -19,10 +19,10 @@ def main():
     base_url = os.getenv("API_BASE_URL")
     api_key = os.getenv("API_KEY")
     if not base_url or not api_key:
-        raise RuntimeError("API_BASE_URL ou API_KEY manquants")
-    
-    # 2) Préparation de la requête HTTP vers /products
-    url = base_url.rstrip("/") + "/products"
+        raise RuntimeError("API_BASE_URL ou API_KEY manquants (.env / environnement)")
+
+    # 2) Préparation de la requête HTTP vers /customers
+    url = base_url.rstrip("/") + "/customers"
     params = {"limit": 250}
     headers = {
         "Authorization": f"{api_key}",
@@ -43,16 +43,16 @@ def main():
     # 5) Passage en DataFrame (pandas) pour manipuler facilement
     df = pd.DataFrame(items)
     if df.empty:
-        print("Aucun produit renvoyé, rien à écrire.")
+        print("Aucun client renvoyé, rien à écrire.")
         return
 
-    # Colonnes techniques pour traçabilité et audit
+    # Colonnes techniques
     df["_ingestion_ts"] = now_iso()
     df["_batch_id"] = str(uuid.uuid4())
 
     # Écriture NDJSON
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_path = Path("data/bronze/products") / f"{ts}.ndjson"
+    out_path = Path("data/bronze/customers") / f"{ts}.ndjson"
     df.to_json(out_path, orient="records", lines=True, force_ascii=False)
 
     print(f"OK : {len(df)} lignes écrites -> {out_path}")

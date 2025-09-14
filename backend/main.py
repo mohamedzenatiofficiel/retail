@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
@@ -26,7 +24,7 @@ API_KEY_HEADER_NAME = "Authorization"
 api_key_header = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 
 
-def now_iso() -> str:
+def now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 

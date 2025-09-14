@@ -9,3 +9,6 @@ python-dotenv
 
 # --- Tests & Qualité ---
 ruff
+
+# --- Data ---
+pandas

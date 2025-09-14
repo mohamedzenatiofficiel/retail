@@ -12,3 +12,7 @@ ruff
 
 # --- Data ---
 pandas
+
+# --- SQL ---
+SQLAlchemy
+psycopg2-binary

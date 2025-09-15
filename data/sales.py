@@ -10,6 +10,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Point d’ancrage = racine du repo (dossier parent du dossier "data")
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+# Optionnel: permettre de surcharger via variable d'env si un jour tu veux
+DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
 
 def now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -111,8 +116,8 @@ def main():
         return
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_customer = Path("data/bronze/sales_customer") / f"{ts}.ndjson"
-    out_product = Path("data/bronze/sales_product") / f"{ts}.ndjson"
+    out_customer = DATA_DIR / "bronze" / "sales_customer" / f"{ts}.ndjson"
+    out_product = DATA_DIR / "bronze" / "sales_product" / f"{ts}.ndjson"
 
     if not df_customer.empty:
         df_customer.to_json(out_customer, orient="records", lines=True, force_ascii=False)

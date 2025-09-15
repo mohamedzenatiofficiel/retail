@@ -5,9 +5,32 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.pkl
+*.egg-info/
 .venv/
 venv/
 
 # OS
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+pg_data/
+*.pid
+
+# Airflow 
+airflow/tmp/
+airflow/plugins/__pycache__/
+airflow/dags/__pycache__/
+
+# Logs
+*.log
+logs/
+airflow/logs/
+.airflow/
+data/bronze/
+data/silver/
+data/gold/

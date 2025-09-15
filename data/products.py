@@ -7,6 +7,15 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+
+# Point d’ancrage = racine du repo (dossier parent du dossier "data")
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+# Optionnel: permettre de surcharger via variable d'env si un jour tu veux
+DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
+
+
+
 load_dotenv()
 
 
@@ -52,7 +61,7 @@ def main():
 
     # Écriture NDJSON
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    out_path = Path("data/bronze/products") / f"{ts}.ndjson"
+    out_path = DATA_DIR / "bronze" / "products" / f"{ts}.ndjson"
     df.to_json(out_path, orient="records", lines=True, force_ascii=False)
 
     print(f"OK : {len(df)} lignes écrites -> {out_path}")

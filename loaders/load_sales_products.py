@@ -10,7 +10,7 @@ from .config import get_engine, read_latest_ndjson
 
 def main():
     # 1) Lire le dernier NDJSON de sales_product (Bronze)
-    df, f = read_latest_ndjson("data/bronze/sales_product")
+    df, f = read_latest_ndjson("bronze/sales_product")
 
     # 2) Ouvrir une transaction
     engine = get_engine()

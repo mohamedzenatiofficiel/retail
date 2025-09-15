@@ -8,7 +8,7 @@ from .config import get_engine, read_latest_ndjson
 
 def main():
     # 1) Lire le dernier NDJSON de products (Bronze)
-    df, f = read_latest_ndjson("data/bronze/products")
+    df, f = read_latest_ndjson("bronze/products")
 
     # 2) Ouvrir une connexion/transaction à Postgres
     engine = get_engine()

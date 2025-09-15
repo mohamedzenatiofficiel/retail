@@ -24,5 +24,77 @@ services:
     depends_on:
       - postgres
 
+  airflow-init:
+    image: apache/airflow:2.9.2
+    container_name: retail_airflow_init
+    entrypoint: /bin/bash
+    command: -c "airflow db migrate && airflow users create --role Admin --username ${_AIRFLOW_WWW_USER_USERNAME:-admin} --password ${_AIRFLOW_WWW_USER_PASSWORD:-admin} --firstname Admin --lastname User --email admin@example.com || true"
+    env_file:
+      - .env
+    environment:
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
+      - API_BASE_URL=${API_BASE_URL_DOCKER}
+    user: "0:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./:/opt/retail
+    depends_on:
+      - postgres
+
+  airflow-webserver:
+    image: apache/airflow:2.9.2
+    container_name: retail_airflow_web
+    restart: always
+    command: webserver
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
+      - API_BASE_URL=${API_BASE_URL_DOCKER}
+      # --- AJOUTS MINIMAUX POUR L'UI ---
+      - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+      - AIRFLOW__CORE__STORE_DAG_CODE=True
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./:/opt/retail
+    depends_on:
+      - airflow-init
+      - postgres
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.2
+    container_name: retail_airflow_scheduler
+    restart: always
+    command: scheduler
+    env_file:
+      - .env
+    environment:
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
+      - API_BASE_URL=${API_BASE_URL_DOCKER}
+      # --- AJOUTS MINIMAUX POUR SERIALISER LES DAGs ---
+      - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+      - AIRFLOW__CORE__STORE_DAG_CODE=True
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./:/opt/retail
+    depends_on:
+      - airflow-init
+      - postgres
+
 volumes:
   pg_data:

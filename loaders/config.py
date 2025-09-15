@@ -27,17 +27,23 @@ def get_engine():
     return create_engine(url)
 
 
-def latest_ndjson(folder: str) -> Path:
+# Ancre à la racine du projet 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+# Emplacement des données
+DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
+
+def latest_ndjson(subpath: str) -> Path:
     # 3) Récupérer le dernier fichier .ndjson d'un dossier
-    p = Path(folder)
-    files = sorted(p.glob("*.ndjson"))
+    folder = (DATA_DIR / subpath)
+    files = sorted(folder.glob("*.ndjson"))
     if not files:
         raise FileNotFoundError(f"Aucun NDJSON trouvé dans : {folder}")
     return files[-1]
 
 
-def read_latest_ndjson(folder: str):
+def read_latest_ndjson(subpath: str):
     # 4) Trouver le dernier NDJSON et le charger en DataFrame pandas
-    f = latest_ndjson(folder)
+    f = latest_ndjson(subpath)
     df = pd.read_json(f, lines=True)
     return df, f

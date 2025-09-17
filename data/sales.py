@@ -2,11 +2,15 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+
+# état incrémental (table meta.ingestion_state)
+#      -> on lit/écrit last_sales_id ici
+from loaders.state_store import get_last_sales_id, set_last_sales_id
 
 # 0) Charger les variables d'environnement (.env)
 load_dotenv()
@@ -15,9 +19,6 @@ load_dotenv()
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
 
-# état incrémental (table meta.ingestion_state)
-#      -> on lit/écrit last_sales_id ici
-from loaders.state_store import get_last_sales_id, set_last_sales_id
 
 
 def now_iso():

@@ -26,7 +26,8 @@ def get_engine():
     # 2) Créer l'engine SQLAlchemy (objet de connexion réutilisable)
     return create_engine(url)
 
-
+# ✅ Ici on crée une variable globale "engine"
+engine = get_engine()
 # Ancre à la racine du projet 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 

@@ -2,28 +2,36 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+# 0) Charger les variables d'environnement (.env)
 load_dotenv()
 
-# Point d’ancrage = racine du repo (dossier parent du dossier "data")
-ROOT_DIR = Path(__file__).resolve().parents[1]
 
-# Optionnel: permettre de surcharger via variable d'env si un jour tu veux
+ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
 
+# état incrémental (table meta.ingestion_state)
+#      -> on lit/écrit last_sales_id ici
+from loaders.state_store import get_last_sales_id, set_last_sales_id
+
+
 def now_iso():
+    """Horodatage technique en UTC (sans microsecondes)."""
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 def get_sales_from_api(start_sales_id: int, limit: int):
-    
-    # 1) Récupère les ventes depuis l'API /sales avec authentification ApiKey.
-    
+    """
+    1) Appel HTTP vers /sales avec authentification ApiKey.
+
+    - start_sales_id : id de vente (inclus) à partir duquel on récupère
+    - limit          : taille de page (max 250)
+    """
     base_url = os.getenv("API_BASE_URL")
     api_key = os.getenv("API_KEY")
     if not base_url or not api_key:
@@ -31,10 +39,7 @@ def get_sales_from_api(start_sales_id: int, limit: int):
 
     url = base_url.rstrip("/") + "/sales"
     params = {"start_sales_id": start_sales_id, "limit": limit}
-    headers = {
-        "Authorization": f"{api_key}",
-        "Accept": "application/json",
-    }
+    headers = {"Authorization": f"{api_key}", "Accept": "application/json"}
 
     r = requests.get(url, params=params, headers=headers, timeout=30)
     if r.status_code == 401:
@@ -48,30 +53,32 @@ def get_sales_from_api(start_sales_id: int, limit: int):
     return items
 
 
-def normalize_sales(items: List[Dict[str, Any]], batch_id: str, ingestion_ts: str, ):
+def normalize_sales(
+    items: List[Dict[str, Any]],
+    batch_id: str,
+    ingestion_ts: str,
+):
     """
-    3) Normalisation des ventes en 2 DataFrames :
-      - sales_customer : id, datetime, total_amount, customer_id, _ingestion_ts, _batch_id
-      - sales_product  : sale_id, line_no, product_sku, quantity, amount, _ingestion_ts, _batch_id
+    2) Normalisation en 2 DataFrames :
+       - df_customer : 1 ligne par vente  (id, datetime, total_amount, customer_id, _ingestion_ts, _batch_id)
+       - df_product  : 1 ligne par ligne (sale_id, line_no, product_sku, quantity, amount, _ingestion_ts, _batch_id)
     """
     if not items:
         return pd.DataFrame(), pd.DataFrame()
 
+    # 2.1) Header des ventes
     df_customer = pd.DataFrame(
-        [
-            {
-                "id": it.get("id"),
-                "datetime": it.get("datetime"),
-                "total_amount": it.get("total_amount"),
-                "customer_id": it.get("customer_id"),
-            }
-            for it in items
-        ]
+        {
+            "id": [it.get("id") for it in items],
+            "datetime": [it.get("datetime") for it in items],
+            "total_amount": [it.get("total_amount") for it in items],
+            "customer_id": [it.get("customer_id") for it in items],
+        }
     )
     df_customer["_ingestion_ts"] = ingestion_ts
     df_customer["_batch_id"] = batch_id
 
-
+    # 2.2) Lignes (items), on ajoute un line_no séquentiel par vente
     rows = []
     for it in items:
         sale_id = it.get("id")
@@ -94,27 +101,37 @@ def normalize_sales(items: List[Dict[str, Any]], batch_id: str, ingestion_ts: st
 
 def main():
     """
-    4) Fonction principale :
-       - Récupère les ventes via l'API
-       - Normalise les données
-       - Sauvegarde 2 fichiers NDJSON (customer + product)
+    3) Pipeline incrémental /sales :
+       a) Lire last_sales_id dans meta.ingestion_state (ou 1 si None)
+       b) Appeler /sales?start_sales_id=...&limit=...
+       c) Normaliser (2 DF)
+       d) Écrire 2 NDJSON en bronze/sales_customer & bronze/sales_product
+       e) Mettre à jour last_sales_id = max_id + 1
     """
-    start_sales_id = int(os.getenv("START_SALES_ID", "1"))
+    # a) Lire l'état (None si premier run)
+    last_id = get_last_sales_id()
+    start_sales_id = 1 if last_id is None else int(last_id)
+
+    # b) Paramètres de page
     limit = int(os.getenv("SALES_LIMIT", "250"))
 
+    # c) Appel API
     items = get_sales_from_api(start_sales_id=start_sales_id, limit=limit)
     if not items:
-        print("Aucune vente renvoyée, rien à écrire.")
+        print(f"Aucune vente renvoyée (start_sales_id={start_sales_id}). Rien à écrire, état inchangé.")
         return
 
+    # d) Colonnes techniques de batch
     ingestion_ts = now_iso()
     batch_id = str(uuid.uuid4())
 
+    # e) Normalisation -> 2 DataFrames
     df_customer, df_product = normalize_sales(items, batch_id=batch_id, ingestion_ts=ingestion_ts)
     if df_customer.empty and df_product.empty:
         print("Après normalisation, données vides. Rien à écrire.")
         return
 
+    # f) Chemins de sortie NDJSON (⚠️ dossiers supposés existants)
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out_customer = DATA_DIR / "bronze" / "sales_customer" / f"{ts}.ndjson"
     out_product = DATA_DIR / "bronze" / "sales_product" / f"{ts}.ndjson"
@@ -126,7 +143,15 @@ def main():
         df_product.to_json(out_product, orient="records", lines=True, force_ascii=False)
         print(f"OK : {len(df_product)} lignes -> {out_product}")
 
-    print(f"Batch ID : {batch_id} | Ingestion : {ingestion_ts} | start_sales_id={start_sales_id}")
+    # g) Avancer l'état : on enregistre "la prochaine valeur à lire"
+    max_id = int(df_customer["id"].max())
+    next_start = max_id + 1
+    set_last_sales_id(next_start)
+
+    print(
+        f"Batch ID : {batch_id} | Ingestion : {ingestion_ts} | "
+        f"start_sales_id={start_sales_id} -> next_start={next_start}"
+    )
 
 
 if __name__ == "__main__":

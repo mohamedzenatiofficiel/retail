@@ -1,4 +1,6 @@
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -7,6 +9,18 @@ from airflow.operators.python import PythonOperator
 import sys
 if "/opt/retail" not in sys.path:
     sys.path.insert(0, "/opt/retail")
+
+
+# --- Helpers: créer les dossiers bronze si manquants (évite les erreurs Pandas) ---
+def ensure_bronze_dirs():
+    """
+    Crée (si besoin) les répertoires Bronze attendus par les scripts d'ingestion.
+    """
+    base = Path("/opt/retail/data/bronze")
+    for sub in ("products", "customers", "sales_customer", "sales_product"):
+        (base / sub).mkdir(parents=True, exist_ok=True)
+    print("Bronze folders OK:", [p.name for p in (base).iterdir()])
+
 
 # ---- Callables qui appellent tes scripts existants ----
 def run_products_bronze():
@@ -19,6 +33,7 @@ def run_customers_bronze():
     customers_main()
 
 def run_sales_bronze():
+    # ⚠️ version incrémentale (lit/maj meta.ingestion_state)
     from data.sales import main as sales_main
     sales_main()
 
@@ -38,6 +53,7 @@ def load_sales_product_silver():
     from loaders.load_sales_products import main as load_sp_main
     load_sp_main()
 
+
 # ---- DAG ----
 default_args = {
     "owner": "you",
@@ -53,6 +69,12 @@ with DAG(
     catchup=False,
     tags=["retail", "bronze", "silver"],
 ) as dag:
+
+    # 0) S'assurer que les dossiers existent (avant toute écriture)
+    t_prepare_dirs = PythonOperator(
+        task_id="prepare_bronze_dirs",
+        python_callable=ensure_bronze_dirs,
+    )
 
     # 1) Bronze: API -> NDJSON
     t_products_bronze = PythonOperator(
@@ -87,6 +109,7 @@ with DAG(
     )
 
     # Dépendances
+    t_prepare_dirs >> [t_products_bronze, t_customers_bronze, t_sales_bronze]
     t_products_bronze >> t_load_products
     t_customers_bronze >> t_load_customers
     t_sales_bronze >> [t_load_sales_customer, t_load_sales_product]

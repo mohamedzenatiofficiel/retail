@@ -35,7 +35,7 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests dbt-postgres
       - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
       - API_BASE_URL=${API_BASE_URL_DOCKER}
     user: "0:0"
@@ -63,7 +63,7 @@ services:
       - AIRFLOW__CORE__STORE_DAG_CODE=True
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests dbt-postgres
       - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
       - API_BASE_URL=${API_BASE_URL_DOCKER}
     volumes:
@@ -89,7 +89,7 @@ services:
       - AIRFLOW__CORE__STORE_DAG_CODE=True
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas SQLAlchemy psycopg2-binary python-dotenv requests dbt-postgres
       - POSTGRES_HOST=${POSTGRES_HOST_DOCKER}
       - API_BASE_URL=${API_BASE_URL_DOCKER}
     volumes:

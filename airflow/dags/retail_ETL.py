@@ -3,6 +3,7 @@ from pathlib import Path
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 
 # Pour pouvoir importer tes modules (montés dans /opt/retail)
 import sys
@@ -107,8 +108,64 @@ with DAG(
         python_callable=load_sales_product_silver,
     )
 
+    # Tâches dbt (Gold + tests)
+    DBT_PROJECT_DIR = "/opt/retail"
+    DBT_PROFILES_DIR = "/opt/retail/dbt"
+    dbt_env = {
+        "DBT_PROFILES_DIR": DBT_PROFILES_DIR,
+        "PATH": "/usr/local/bin:/usr/bin:/bin:/home/airflow/.local/bin",
+
+        # ⇩⇩ ADAPTE ces valeurs à ton infra ⇩⇩
+        "POSTGRES_HOST": "postgres",   # <- nom du service Docker ou hostname réel, PAS "localhost"
+        "POSTGRES_USER": "retail",
+        "POSTGRES_PASSWORD": "retail",
+        "POSTGRES_DB": "retail",
+        "POSTGRES_PORT": "5432",
+    }
+    DBT = "python -m dbt.cli.main"
+
+    t_dbt_deps = BashOperator(
+        task_id="dbt_deps",
+        bash_command=f'{DBT} deps --project-dir "{DBT_PROJECT_DIR}"',
+        env=dbt_env,
+    )
+
+    # 1er run : dimensions + fait sales_item
+    t_dbt_run_core = BashOperator(
+        task_id="dbt_run_core",
+        bash_command=(
+            f'{DBT} run --project-dir "{DBT_PROJECT_DIR}" '
+            " --select dim_customer dim_product sales_item"
+        ),
+        env=dbt_env,
+    )
+
+    t_dbt_run_mart = BashOperator(
+        task_id="dbt_run_mart",
+        bash_command=(
+            "cd /opt/retail && "
+            "python -m dbt.cli.main run "
+            "--project-dir /opt/retail "
+            "--profiles-dir /opt/retail/dbt "
+            "--select mart_daily_kpis "
+            "--target dev --fail-fast"
+        ),
+    )
+
+    t_dbt_test = BashOperator(
+        task_id="dbt_test",
+        bash_command=f'{DBT} test --project-dir "{DBT_PROJECT_DIR}"',
+        env=dbt_env,
+    )
+
+
     # Dépendances
     t_prepare_dirs >> [t_products_bronze, t_customers_bronze, t_sales_bronze]
     t_products_bronze >> t_load_products
     t_customers_bronze >> t_load_customers
     t_sales_bronze >> [t_load_sales_customer, t_load_sales_product]
+
+
+    # Tous les Silver doivent finir avant dbt
+    [t_load_products, t_load_customers, t_load_sales_customer, t_load_sales_product] >> t_dbt_deps
+    t_dbt_deps >> t_dbt_run_core >> t_dbt_run_mart >> t_dbt_test

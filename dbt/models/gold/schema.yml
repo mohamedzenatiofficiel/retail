@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: dim_product
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+
+  - name: dim_customer
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: sales_item
+    columns:
+      - name: sales_item_id
+        tests: [not_null, unique]

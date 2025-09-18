@@ -34,7 +34,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 # Emplacement des données
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT_DIR / "data"))
 
-def latest_ndjson(subpath: str) -> Path:
+def latest_ndjson(subpath: str):
     # 3) Récupérer le dernier fichier .ndjson d'un dossier
     folder = (DATA_DIR / subpath)
     files = sorted(folder.glob("*.ndjson"))

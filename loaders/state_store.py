@@ -3,7 +3,7 @@ from .config import engine  # ou get_engine()
 
 SOURCE = "sales"
 
-def get_last_sales_id() -> int | None:
+def get_last_sales_id():
     with engine.begin() as conn:
         row = conn.execute(text("""
             SELECT last_sales_id
@@ -13,7 +13,7 @@ def get_last_sales_id() -> int | None:
         """), {"source": SOURCE}).first()
         return int(row[0]) if row and row[0] is not None else None
 
-def set_last_sales_id(last_id: int, note: str | None = None) -> None:
+def set_last_sales_id(last_id: int, note: str | None = None):
     with engine.begin() as conn:
         conn.execute(text("""
             INSERT INTO meta.ingestion_state (source_name, last_sales_id, last_run_ts, note)

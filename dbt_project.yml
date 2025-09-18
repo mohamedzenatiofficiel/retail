@@ -2,7 +2,7 @@ name: "retail_dbt"
 version: "1.0.0"
 require-dbt-version: [">=1.8.0", "<2.0.0"]
 
-profile: "retail_postgres"   # doit correspondre à un profil dans profiles.yml
+profile: "retail_dbt"   # doit correspondre à un profil dans profiles.yml
 
 model-paths: ["dbt/models"]
 seed-paths: ["dbt/seeds"]

@@ -54,11 +54,42 @@ Le DAG `retail_etl_hourly` orchestre toutes les étapes :
 ```bash
 docker compose up -d --build
 ```
+### 2. Interfaces disponibles
+
+```
+Airflow : http://localhost:8080
+
+utilisateur : admin@example.com
+mot de passe : admin
+
+PgAdmin : http://localhost:5050
+
+utilisateur : admin@admin.com
+mot de passe : admin
+
+Postgres DB (accès direct) :
+
+host : postgres
+
+port : 5432
+
+user : retail
+
+password : retail
+
+database : retail
+```
 
 
 ## Architecture du projet
 ```
 retail/
+│
+├── backend/               # FastAPI
+│   └── auth.py
+│   └── data.py
+│   └── main.py
+│   └── models.py
 │
 ├── airflow/               # DAGs, logs, plugins
 │   └── dags/retail_ETL.py
@@ -67,6 +98,7 @@ retail/
 │   └── sales.py
 │   └── customers.py
 │   └── products.py
+│
 ├── loaders/               # chargement des données
 │   └── config.py
 │   └── load_all_silver.py
@@ -83,6 +115,9 @@ retail/
 │   │   │   ├── dim_product.sql
 │   │   │   ├── sales_item.sql
 │   │   │   └── mart_sales_by_customer.sql
+│
+├── sql/   
+│   └── schema_tables.sql
 │
 ├── docker-compose.yml
 ├── requirements.txt

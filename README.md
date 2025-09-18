@@ -108,9 +108,9 @@ database : retail
 ## 3. Documentation dbt
 ```
 dbt docs generate
-dbt docs serve
+dbt docs serve --host 127.0.0.1 --port 8081
 ```
-Accès via http://localhost:8081
+
 
 ## 4. Arrêter l’infra
 ```

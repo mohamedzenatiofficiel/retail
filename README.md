@@ -31,6 +31,19 @@ Transformations gérées par **dbt** :
 - `mart_sales_by_customer` : ventes agrégées par client et par jour.
 
 
+## API FastAPI
+
+L’API backend FastAPI expose les données sources utilisées dans la couche Bronze :
+
+/customers → données clients
+
+/products → données produits
+
+/sales → données de ventes (paginations supportées)
+
+Ces endpoints sont consommés automatiquement par Airflow lors de l’ingestion en Bronze.
+
+
 ## Orchestration Airflow
 
 Le DAG `retail_etl_hourly` orchestre toutes les étapes :
@@ -43,6 +56,10 @@ Le DAG `retail_etl_hourly` orchestre toutes les étapes :
    - `dbt_run_mart` : exécution du mart (`mart_sales_by_customer`).  
    - `dbt_test` : exécution des tests de qualité dbt (ex. `unique` et `not_null`).  
 
+### Tests dbt implémentés
+
+unique et not_null sur gold.sales_item.sales_item_id.
+
 ### Planification
 - Le DAG est configuré pour s’exécuter **toutes les heures** (`@hourly`).  
 
@@ -50,9 +67,17 @@ Le DAG `retail_etl_hourly` orchestre toutes les étapes :
 
 ## Lancement
 
+Définir la variable d’environnement pour dbt
+
+Sous PowerShell (Windows) :
+
+$env:DBT_PROFILES_DIR = "$PWD\dbt"
+
 ### 1. Démarrer l’infra
 ```bash
-docker compose up -d --build
+docker compose up -d postgres pgadmin airflow-init
+
+docker compose up -d airflow-webserver airflow-scheduler
 ```
 ### 2. Interfaces disponibles
 
@@ -64,7 +89,7 @@ mot de passe : admin
 
 PgAdmin : http://localhost:5050
 
-utilisateur : admin@admin.com
+utilisateur : admin
 mot de passe : admin
 
 Postgres DB (accès direct) :
@@ -80,6 +105,17 @@ password : retail
 database : retail
 ```
 
+## 3. Documentation dbt
+```
+dbt docs generate
+dbt docs serve
+```
+Accès via http://localhost:8081
+
+## 4. Arrêter l’infra
+```
+docker compose down -v       # stoppe + supprime les volumes (DB, logs, etc.)
+```
 
 ## Architecture du projet
 ```

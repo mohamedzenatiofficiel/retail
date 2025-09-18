@@ -140,14 +140,16 @@ with DAG(
         env=dbt_env,
     )
 
-    # 2e run : mart
     t_dbt_run_mart = BashOperator(
         task_id="dbt_run_mart",
         bash_command=(
-            f'{DBT} run --project-dir "{DBT_PROJECT_DIR}" '
-            " --select mart_sales_by_customer"
+            "cd /opt/retail && "
+            "python -m dbt.cli.main run "
+            "--project-dir /opt/retail "
+            "--profiles-dir /opt/retail/dbt "
+            "--select mart_daily_kpis "
+            "--target dev --fail-fast"
         ),
-        env=dbt_env,
     )
 
     t_dbt_test = BashOperator(

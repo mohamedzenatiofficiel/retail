@@ -1,0 +1,13 @@
+retail_postgres:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost        # depuis ta machine
+      user: retail
+      password: retail
+      port: 5432
+      dbname: retail
+      schema: gold           # schéma par défaut pour les modèles
+      threads: 4
+      keepalives_idle: 0

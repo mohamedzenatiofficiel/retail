@@ -34,3 +34,8 @@ airflow/logs/
 data/bronze/
 data/silver/
 data/gold/
+
+# DBT
+dbt/target/
+dbt/logs/
+dbt/.user.yml

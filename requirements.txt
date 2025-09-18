@@ -16,3 +16,5 @@ pandas
 # --- SQL ---
 SQLAlchemy
 psycopg2-binary
+
+dbt-postgres~=1.8

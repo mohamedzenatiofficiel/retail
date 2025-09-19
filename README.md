@@ -74,7 +74,15 @@ Sous PowerShell (Windows) :
 $env:DBT_PROFILES_DIR = "$PWD\dbt"
 
 ### 1. Démarrer l’infra
+
+Démarrer l'API :
+```
+py -3.11 -m uvicorn backend.main:app --reload --port 4010
+```
+
+Sur un second terminal :
 ```bash
+
 docker compose up -d postgres pgadmin airflow-init
 
 docker compose up -d airflow-webserver airflow-scheduler
